@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { Observable } from 'rxjs';
 
 import { map } from 'rxjs/operators';
@@ -68,11 +68,13 @@ interface ProductMagentoItem {
   created_at: string;
   id: number;
   name: string;
+  sku: string;
   visibility: number;
   product_links: ProductLinksMagento[];
   price: number;
   media_gallery_entries: ProductMediaGalleryMagento[];
   custom_attributes: ProductMagentpCustomAttribute[];
+  extension_attributes: ProductExtensionAttributesMagento;
 }
 
 interface ProductMagentpCustomAttribute {
@@ -86,7 +88,18 @@ interface ProductLinksMagento {
   linked_product_sku: string;
   linked_product_type: string;
   position: number;
-  extension_attributes: any;
+}
+
+interface ProductExtensionAttributesMagento {
+  configurable_product_options: ConfigurableProductOptionsMagento[];
+}
+
+interface ConfigurableProductOptionsMagento {
+  id: number;
+  attribute_id: string;
+  label: string;
+  position: number;
+  values: { value_index: number }[];
 }
 
 interface ProductMediaGalleryMagento {
@@ -98,6 +111,44 @@ interface ProductMediaGalleryMagento {
   types: string[];
   file: string;
 }
+
+const idToColor: Record<number, string> = {
+  49: 'black',
+  50: 'blue',
+  51: 'brown',
+  52: 'gray',
+  53: 'green',
+  54: 'lavender',
+  55: 'multi',
+  56: 'orange',
+  57: 'purple',
+  58: 'red',
+  59: 'white',
+  60: 'yellow',
+};
+
+const idToSize: Record<number, string> = {
+  166: 'XS',
+  167: 'S',
+  168: 'M',
+  169: 'L',
+  170: 'XL',
+  171: '28',
+  172: '29',
+  173: '30',
+  174: '31',
+  175: '32',
+  176: '33',
+  177: '34',
+  178: '36',
+  179: '38',
+  91: '55 cm',
+  92: '65 cm',
+  93: '75 cm',
+  94: '6 foot',
+  95: '8 foot',
+  96: '10 foot',
+};
 
 @Controller('api/v1/products')
 export class ProductsController {
@@ -130,13 +181,24 @@ export class ProductsController {
       );
   }
 
+  @Get(':id')
+  getOne(@Param() params: any): Observable<ProductDto> {
+    return this.http
+      .get<ProductMagentoItem>(
+        `https://magento.test/rest/V1/products/${params.id}`,
+      )
+      .pipe(map((response) => this.mapProduct(response.data)));
+  }
+
   private mapProduct(product: ProductMagentoItem): ProductDto {
     const variants = this.mapVariant(product);
 
     return {
       id: product.id.toString(),
       name: product.name,
-      description: product.name,
+      description: product.custom_attributes.find(
+        (e) => e.attribute_code === 'description',
+      )?.value,
       slug: product.name,
       variants,
       masterVariant: variants[0],
@@ -144,12 +206,10 @@ export class ProductsController {
   }
 
   private mapVariant(variant: ProductMagentoItem): ProductVariantDto[] {
-    return (
-      variant.product_links.length ? variant.product_links : [variant]
-    ).map((link) => {
+    return variant.media_gallery_entries.map(() => {
       return {
-        id: link.linked_product_sku,
-        sku: link.linked_product_sku,
+        id: variant.id.toString(),
+        sku: variant.sku,
         images: variant.media_gallery_entries.map(this.mapImage),
         prices: [
           {
@@ -159,17 +219,34 @@ export class ProductsController {
             },
           },
         ],
-        attributes: variant.custom_attributes.map((attr) => {
-          return {
-            name: attr.attribute_code,
-            value: {
-              key: attr.attribute_code,
-              label: attr.value,
+        attributes:
+          variant.extension_attributes.configurable_product_options.flatMap(
+            (attr) => {
+              return attr.values.map((v) => {
+                return {
+                  name: attr.label,
+                  value: {
+                    key: v.value_index.toString(),
+                    label: this.mapAttributeLabel(attr.label, v.value_index),
+                  },
+                };
+              });
             },
-          };
-        }),
+          ),
       };
     });
+  }
+
+  private mapAttributeLabel(label: string, value: number) {
+    if (label === 'Color') {
+      return idToColor[value];
+    }
+
+    if (label === 'Size') {
+      return idToSize[value];
+    }
+
+    return value.toString();
   }
 
   private mapImage(image: ProductMediaGalleryMagento): ProductImageDto {
