@@ -1,37 +1,14 @@
 import { HttpService } from '@nestjs/axios';
-import { Controller, Get, Query } from '@nestjs/common';
-import { Agent } from 'https';
+import { Injectable } from '@nestjs/common';
 import { Observable } from 'rxjs';
+import { CategoryDto, CategoryMagento } from './category.models';
 
 import { map } from 'rxjs/operators';
 
-interface CategoryDto {
-  id: string;
-  name: string;
-  description: string;
-  slug: string;
-  parent?: {
-    id: string;
-  };
-  ancestors: { id: string; type: string }[];
-}
-
-interface CategoryMagento {
-  id: number;
-  parent_id?: number;
-  name: string;
-  is_active: boolean;
-  position: number;
-  level: number;
-  product_count: number;
-  children_data: CategoryMagento[];
-}
-
-@Controller('api/v1/categories')
-export class CategoryController {
+@Injectable()
+export class MagentoCategoriesService {
   constructor(private readonly http: HttpService) {}
-  @Get()
-  getAll(@Query() query: any): Observable<CategoryDto[]> {
+  getAll(): Observable<CategoryDto[]> {
     return this.http
       .get<CategoryMagento>('https://magento.test/rest/V1/categories')
       .pipe(map((response) => this.mapCategory(response.data)));
