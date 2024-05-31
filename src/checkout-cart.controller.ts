@@ -1,10 +1,44 @@
 import { HttpService } from '@nestjs/axios';
 import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 
-import { map, catchError } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 
-type CartAction = 'AddLineItem' | 'RemoveLineItem' | 'ChangeLineItemQuantity';
+type CartAction =
+  | 'AddLineItem'
+  | 'RemoveLineItem'
+  | 'ChangeLineItemQuantity'
+  | 'SetShippingAddress';
+
+interface SetShippingAddress {
+  city: string;
+  country: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  postalCode: string;
+  region: string;
+  streetName: string;
+  streetNumber: string;
+}
+
+interface MagentoShippingAddress {
+  addressInformation: {
+    shipping_method_code: string;
+    shipping_carrier_code: string;
+    shipping_address: {
+      city: string;
+      country_id: string;
+      email: string;
+      firstname: string;
+      lastname: string;
+      postcode: string;
+      region: string;
+      street: string[];
+      telephone: string;
+    };
+  };
+}
 
 interface AddLineItem {
   quantity: number;
@@ -27,6 +61,7 @@ interface PutCartDto {
   AddLineItem?: AddLineItem;
   ChangeLineItemQuantity?: ChangeLineItemQuantity;
   RemoveLineItem?: RemoveLineItem;
+  SetShippingAddress?: SetShippingAddress;
 }
 
 interface MagentoCartItem {
@@ -86,6 +121,13 @@ export class CheckoutCartController {
     return this.http
       .post(`https://magento.test/rest/V1/guest-carts`)
       .pipe(map((cartId) => ({ id: cartId.data })));
+  }
+
+  @Post(':id/order')
+  createOrder(@Param('id') id: string) {
+    return this.http
+      .put(`https://magento.test/rest/V1/guest-carts/${id}/order`)
+      .pipe(map((response) => response.data));
   }
 
   @Get(':id')
@@ -148,16 +190,51 @@ export class CheckoutCartController {
     }
 
     if (body.action === 'ChangeLineItemQuantity') {
-      // todo
       return this.changeLineItemQuantity(body, id);
     }
 
     if (body.action === 'RemoveLineItem') {
-      // todo
       return this.removeLineItem(body, id);
     }
 
+    if (body.action === 'SetShippingAddress') {
+      return this.setShippingAddress(body, id);
+    }
+
     return throwError(() => 'Invalid action');
+  }
+
+  private setShippingAddress(body: PutCartDto, id: string) {
+    const address: MagentoShippingAddress = {
+      addressInformation: {
+        shipping_method_code: 'flatrate',
+        shipping_carrier_code: 'flatrate',
+        shipping_address: {
+          city: body.SetShippingAddress.city,
+          country_id: body.SetShippingAddress.country,
+          email: body.SetShippingAddress.email,
+          firstname: body.SetShippingAddress.firstName,
+          lastname: body.SetShippingAddress.lastName,
+          postcode: body.SetShippingAddress.postalCode,
+          region: body.SetShippingAddress.region,
+          street: [
+            `${body.SetShippingAddress.streetName} ${body.SetShippingAddress.streetNumber}`,
+          ],
+          telephone: '1234567890',
+        },
+      },
+    };
+
+    return this.http
+      .post(
+        `https://magento.test/rest/V1/guest-carts/${id}/shipping-information`,
+        address,
+      )
+      .pipe(
+        map((response) => {
+          return response.data;
+        }),
+      );
   }
 
   private changeLineItemQuantity(body: PutCartDto, id: string) {

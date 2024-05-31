@@ -11,7 +11,8 @@ import { AxiosError } from 'axios';
 @Catch(AxiosError)
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: AxiosError, host: ArgumentsHost) {
-    console.log('ExceptionFilter', exception);
+    console.log(exception);
+    console.log('exception', JSON.stringify(exception.response?.data, null, 2));
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
