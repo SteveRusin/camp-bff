@@ -220,7 +220,7 @@ export class ProductsController {
           },
         ],
         attributes:
-          variant.extension_attributes.configurable_product_options.flatMap(
+          variant.extension_attributes.configurable_product_options?.flatMap(
             (attr) => {
               return attr.values.map((v) => {
                 return {
