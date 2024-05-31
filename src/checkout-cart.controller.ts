@@ -148,12 +148,10 @@ export class CheckoutCartController {
     }
 
     if (body.action === 'ChangeLineItemQuantity') {
-      // todo
       return this.changeLineItemQuantity(body, id);
     }
 
     if (body.action === 'RemoveLineItem') {
-      // todo
       return this.removeLineItem(body, id);
     }
 
