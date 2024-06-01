@@ -1,10 +1,10 @@
 export interface CategoryDto {
-  id: string;
+  id: any;
   name: string;
   description: string;
-  slug: string;
+  slug: any;
   parent?: {
-    id: string;
+    id: any;
   };
   ancestors: { id: string; type: string }[];
 }

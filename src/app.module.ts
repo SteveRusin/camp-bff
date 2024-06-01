@@ -5,9 +5,11 @@ import { CategoryController } from './category/categories.controller';
 import { MagentoCategoriesService } from './category/magento-categories.service';
 import { CommercetoolCategoriesService } from './category/commercetool-categories.service';
 import { ProductsController } from './products/products.controller';
+import { CommercetoolProductsService } from './products/commercetool-products.service';
 import { MagentoProductsService } from './products/magento-products.service';
 import { CheckoutCartController } from './checkout/checkout-cart.controller';
 import { MagentoCheckoutCartService } from './checkout/checkout.service';
+import { CommercetoolCheckoutCartService } from './checkout/commercetool-checkout.service';
 import { ConfigService } from './config.service';
 
 @Module({
@@ -19,6 +21,8 @@ import { ConfigService } from './config.service';
     MagentoProductsService,
     MagentoCheckoutCartService,
     CommercetoolCategoriesService,
+    CommercetoolProductsService,
+    CommercetoolCheckoutCartService,
   ],
 })
 export class AppModule implements NestModule {

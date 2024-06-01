@@ -143,3 +143,52 @@ export const idToSize: Record<number, string> = {
   95: '8 foot',
   96: '10 foot',
 };
+
+export interface ProductCommercetool {
+  limit: number;
+  offset: number;
+  count: number;
+  total: number;
+  results: ProductResultCommercetool[];
+}
+export interface ProductResultCommercetool {
+  id: string;
+  version: number;
+  productType: {
+    typeId: string;
+    id: string;
+  };
+  name: {
+    'en-US': string;
+  };
+  description: {
+    'en-US': string;
+  };
+  categories: {
+    typeId: string;
+    id: string;
+  }[];
+  slug: {
+    'en-US': string;
+  };
+  variants: ProductVariantCommercetool[];
+  masterVariant: ProductVariantCommercetool;
+}
+
+export interface ProductVariantCommercetool {
+  id: string;
+  sku: string;
+  prices: {
+    value: {
+      currencyCode: string;
+      centAmount: number;
+    };
+  }[];
+  images: {
+    url: string;
+  }[];
+  attributes: {
+    name: string;
+    value: string;
+  }[];
+}

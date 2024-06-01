@@ -86,6 +86,7 @@ export interface GetCartDto {
     centAmount: number;
   };
   totalQuantity: number;
+  version?: number;
 }
 
 export interface MagentoCart {
@@ -105,3 +106,106 @@ export interface ProductVariant {
   images?: { url: string }[];
   prices?: { value: { currencyCode: string; centAmount: number } }[];
 }
+
+export interface CommercetoolCart {
+  type: string;
+  id: string;
+  version: number;
+  versionModifiedAt: string;
+  lastMessageSequenceNumber: number;
+  createdAt: string;
+  lastModifiedAt: string;
+  lastModifiedBy: {
+    clientId: string;
+    isPlatformClient: boolean;
+  };
+  createdBy: {
+    clientId: string;
+    isPlatformClient: boolean;
+  };
+  lineItems: any[];
+  cartState: string;
+  totalPrice: {
+    type: string;
+    currencyCode: string;
+    centAmount: number;
+    fractionDigits: number;
+  };
+  shippingMode: string;
+  shipping: any[];
+  customLineItems: any[];
+  discountCodes: any[];
+  directDiscounts: any[];
+  inventoryMode: string;
+  taxMode: string;
+  taxRoundingMode: string;
+  taxCalculationMode: string;
+  deleteDaysAfterLastModification: number;
+  refusedGifts: any[];
+  origin: string;
+  itemShippingAddresses: any[];
+}
+
+export interface CommercetoolAddLineItemAction {
+  action: 'addLineItem';
+  productId: any;
+  variantId: any;
+  quantity: number;
+}
+
+export interface CommercetoolChangeLineItemAction {
+  action: 'changeLineItemQuantity';
+  lineItemId: any;
+  quantity: number;
+}
+
+export interface CommercetoolRemoveLineItemAction {
+  action: 'removeLineItem';
+  lineItemId: any;
+}
+
+export interface CommercetoolSetShippingAddress {
+  action: 'setShippingAddress';
+  address: Partial<{
+    key: string;
+    title: string;
+    salutation: string;
+    firstName: string;
+    lastName: string;
+    streetName: string;
+    streetNumber: string;
+    additionalStreetInfo: string;
+    postalCode: string;
+    city: string;
+    region: string;
+    country: string;
+    company: string;
+    department: string;
+    building: string;
+    apartment: string;
+    pOBox: string;
+    phone: string;
+    mobile: string;
+    email: string;
+    fax: string;
+    additionalAddressInfo: string;
+    externalId: string;
+  }>;
+}
+
+export interface CommercetoolCartAction<T> {
+  version: number;
+  actions: [T];
+}
+
+export type CommercetoolCartAddItem =
+  CommercetoolCartAction<CommercetoolAddLineItemAction>;
+
+export type CommercetoolCartChangeQuantity =
+  CommercetoolCartAction<CommercetoolChangeLineItemAction>;
+
+export type CommercetoolCartRemoveItem =
+  CommercetoolCartAction<CommercetoolRemoveLineItemAction>;
+
+export type CommercetoolCartSetShippingAddress =
+  CommercetoolCartAction<CommercetoolSetShippingAddress>;

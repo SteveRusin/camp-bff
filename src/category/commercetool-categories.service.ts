@@ -35,12 +35,23 @@ export class CommercetoolCategoriesService {
         id: cat.id,
         name: cat.name['en-US'],
         description: cat.name['en-US'],
-        slug: cat.slug['en-US'],
-        parent: cat.parent?.id && {
-          id: cat.parent?.id,
-        },
+        slug: cat.id,
+        parent:
+          (cat.parent?.id && {
+            id: cat.parent?.id,
+          }) ||
+          null,
         ancestors: this.mapAncestors(category.results, cat),
       };
+    });
+
+    categories.forEach((cat) => {
+      cat.ancestors.sort((a, b) => {
+        const aIndx = categories.findIndex((x) => x.id === a.id);
+        const bIndx = categories.findIndex((x) => x.id === b.id);
+
+        return aIndx - bIndx;
+      });
     });
 
     return categories;
