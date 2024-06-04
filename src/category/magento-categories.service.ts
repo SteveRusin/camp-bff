@@ -11,12 +11,38 @@ export class MagentoCategoriesService {
   getAll(): Observable<CategoryDto[]> {
     return this.http
       .get<CategoryMagento>('https://magento.test/rest/V1/categories')
-      .pipe(map((response) => this.mapCategory(response.data)));
+      .pipe(map((response) => this.mapCategories(response.data)));
   }
 
-  private mapCategory(category: CategoryMagento): CategoryDto[] {
-    const categories: CategoryDto[] = category.children_data.map((cat) => {
-      return {
+  private mapCategories(categories: CategoryMagento) {
+    const result = [
+      {
+        id: categories.id.toString(),
+        name: categories.name,
+        description: categories.name,
+        slug: categories.id.toString(),
+        ancestors: [],
+      },
+    ];
+
+    this.mapCategory(categories, categories, result);
+
+    result.forEach((cat) => {
+      cat.ancestors.sort((a, b) => {
+        return +a.id - +b.id;
+      });
+    });
+
+    return result;
+  }
+
+  private mapCategory(
+    root: CategoryMagento,
+    category: CategoryMagento,
+    agg: CategoryDto[],
+  ): CategoryDto[] {
+    category.children_data.forEach((cat) => {
+      agg.push({
         id: cat.id.toString(),
         name: cat.name,
         description: cat.name,
@@ -24,33 +50,56 @@ export class MagentoCategoriesService {
         parent: {
           id: cat.parent_id?.toString(),
         },
-        ancestors: this.mapAncestors(cat),
-      };
+        ancestors: this.mapAncestors(root, cat),
+      });
+
+      if (cat.children_data) {
+        this.mapCategory(root, cat, agg);
+      }
     });
 
-    categories.unshift({
-      id: category.id.toString(),
-      name: category.name,
-      description: category.name,
-      slug: category.id.toString(),
-      ancestors: [],
-    });
-
-    return categories;
+    return agg;
   }
 
   private mapAncestors(
+    root: CategoryMagento,
     category: CategoryMagento,
   ): { id: string; type: string }[] {
     const ancestors = [];
-    let parent = category;
-    while (parent?.parent_id) {
-      ancestors.push({
-        id: parent.parent_id.toString(),
-        type: 'category',
-      });
-      parent = parent.children_data[0];
-    }
+    let parent = null;
+    do {
+      parent = this.findParent(root, category.parent_id);
+      parent &&
+        ancestors.push({
+          id: parent.id?.toString(),
+          type: 'category',
+        });
+      category = parent;
+    } while (category?.parent_id);
+
     return ancestors;
+  }
+
+  private findParent(
+    category: CategoryMagento,
+    id: number,
+  ): CategoryMagento | void {
+    if (category.id === id) {
+      return category;
+    }
+
+    if (!category.children_data) {
+      return null;
+    }
+
+    for (const cat of category.children_data) {
+      const res = this.findParent(cat, id);
+
+      if (res) {
+        return res;
+      }
+    }
+
+    return null;
   }
 }
