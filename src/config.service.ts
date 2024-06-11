@@ -15,5 +15,11 @@ export class ConfigService {
 
   COMMERCE_AUTH_TOKEN = this.nestConfig.get('COMMERCE_AUTH_TOKEN');
 
+  CONTENT_STACK_API_KEY = this.nestConfig.get('CONTENT_STACK_API_KEY');
+  CONTENT_STACK_DELIVERY_TOKEN = this.nestConfig.get(
+    'CONTENT_STACK_DELIVERY_TOKEN',
+  );
+  CONTENT_STACK_BASE_URL = this.nestConfig.get('CONTENT_STACK_BASE_URL');
+
   constructor(private nestConfig: NestConfig) {}
 }

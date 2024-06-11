@@ -98,12 +98,16 @@ export class CommercetoolProductsService {
             Authorization: `Bearer ${this.config.COMMERCE_AUTH_TOKEN}`,
           },
           params: {
-            filter: `id:"${params.id}"`,
+            filter: `variants.sku:"${params.id}"`,
           },
         },
       )
       .pipe(
         map((response) => {
+          if (!response.data.results.length) {
+            throw new Error('Product not found');
+          }
+
           return this.mapProduct(response.data.results[0]);
         }),
       );
