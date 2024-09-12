@@ -1,95 +1,34 @@
 import { HttpService } from '@nestjs/axios';
-import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
-import { Observable, of, throwError } from 'rxjs';
+import { Injectable } from '@nestjs/common';
+import { Observable, throwError } from 'rxjs';
 
-import { map, catchError } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
+import {
+  GetCartDto,
+  LineItem,
+  MagentoCart,
+  MagentoCartItem,
+  MagentoShippingAddress,
+  PutCartDto,
+} from './checkout.models';
 
-type CartAction = 'AddLineItem' | 'RemoveLineItem' | 'ChangeLineItemQuantity';
-
-interface AddLineItem {
-  quantity: number;
-  variantId: string;
-}
-
-interface ChangeLineItemQuantity {
-  quantity: number;
-  lineItemId: string;
-}
-
-interface RemoveLineItem {
-  lineItemId: string;
-  quantity: number;
-}
-
-interface PutCartDto {
-  version: number;
-  action: CartAction;
-  AddLineItem?: AddLineItem;
-  ChangeLineItemQuantity?: ChangeLineItemQuantity;
-  RemoveLineItem?: RemoveLineItem;
-}
-
-interface MagentoCartItem {
-  qty: number;
-  quote_id: string;
-  sku: string;
-  price?: number;
-  name?: string;
-  extension_attributes?: {
-    image_url: string;
-  };
-}
-
-interface LineItem {
-  id?: string;
-  variant?: ProductVariant;
-  quantity?: number;
-  totalPrice?: number;
-  currencyCode?: string;
-}
-
-interface GetCartDto {
-  id: string;
-  customerId: string;
-  lineItems: LineItem[];
-  totalPrice: {
-    currencyCode: string;
-    centAmount: number;
-  };
-  totalQuantity: number;
-}
-
-interface MagentoCart {
-  id: string;
-  customer: {
-    id: number;
-  };
-  items_qty: number;
-  items: MagentoCartItem[];
-}
-
-export interface ProductVariant {
-  id?: string;
-  sku?: string;
-  name?: string;
-  slug?: string;
-  images?: { url: string }[];
-  prices?: { value: { currencyCode: string; centAmount: number } }[];
-}
-
-@Controller('api/v1/carts')
-export class CheckoutCartController {
+@Injectable()
+export class MagentoCheckoutCartService {
   constructor(private readonly http: HttpService) {}
 
-  @Post()
   createCart() {
     return this.http
       .post(`https://magento.test/rest/V1/guest-carts`)
       .pipe(map((cartId) => ({ id: cartId.data })));
   }
 
-  @Get(':id')
-  getCart(@Param('id') id: string): Observable<GetCartDto> {
+  createOrder(id: string) {
+    return this.http
+      .put(`https://magento.test/rest/V1/guest-carts/${id}/order`)
+      .pipe(map((response) => response.data));
+  }
+
+  getCart(id: string): Observable<GetCartDto> {
     const cart$ = this.http
       .get<MagentoCart>(`https://magento.test/rest/V1/guest-carts/${id}`)
       .pipe(
@@ -141,8 +80,7 @@ export class CheckoutCartController {
     return cart$;
   }
 
-  @Put(':id')
-  updateCart(@Param('id') id: string, @Body() body: PutCartDto) {
+  updateCart(id: string, body: PutCartDto) {
     if (body.action === 'AddLineItem') {
       return this.addLineItem(body, id);
     }
@@ -155,7 +93,44 @@ export class CheckoutCartController {
       return this.removeLineItem(body, id);
     }
 
+    if (body.action === 'SetShippingAddress') {
+      return this.setShippingAddress(body, id);
+    }
+
     return throwError(() => 'Invalid action');
+  }
+
+  private setShippingAddress(body: PutCartDto, id: string) {
+    const address: MagentoShippingAddress = {
+      addressInformation: {
+        shipping_method_code: 'flatrate',
+        shipping_carrier_code: 'flatrate',
+        shipping_address: {
+          city: body.SetShippingAddress.city,
+          country_id: body.SetShippingAddress.country,
+          email: body.SetShippingAddress.email,
+          firstname: body.SetShippingAddress.firstName,
+          lastname: body.SetShippingAddress.lastName,
+          postcode: body.SetShippingAddress.postalCode,
+          region: body.SetShippingAddress.region,
+          street: [
+            `${body.SetShippingAddress.streetName} ${body.SetShippingAddress.streetNumber}`,
+          ],
+          telephone: '1234567890',
+        },
+      },
+    };
+
+    return this.http
+      .post(
+        `https://magento.test/rest/V1/guest-carts/${id}/shipping-information`,
+        address,
+      )
+      .pipe(
+        map((response) => {
+          return response.data;
+        }),
+      );
   }
 
   private changeLineItemQuantity(body: PutCartDto, id: string) {
