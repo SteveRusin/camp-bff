@@ -11,10 +11,16 @@ import { CheckoutCartController } from './checkout/checkout-cart.controller';
 import { MagentoCheckoutCartService } from './checkout/checkout.service';
 import { CommercetoolCheckoutCartService } from './checkout/commercetool-checkout.service';
 import { ConfigService } from './config.service';
+import { PromoController } from './promo/promo.controller';
 
 @Module({
   imports: [HttpModule, ConfigModule.forRoot()],
-  controllers: [CategoryController, ProductsController, CheckoutCartController],
+  controllers: [
+    CategoryController,
+    ProductsController,
+    CheckoutCartController,
+    PromoController,
+  ],
   providers: [
     ConfigService,
     MagentoCategoriesService,
